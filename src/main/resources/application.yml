@@ -26,7 +26,5 @@ springdoc:
       client-secret: client-secret
       token-url: http://localhost:9000/oauth2/token
 
-oauth2:
-  client:
-    id: ${OAUTH2_CLIENT_ID:default-client-id}
-    secret: ${OAUTH2_CLIENT_SECRET:default-client-secret}
+jwt:
+  secret=${JWT_SECRET_KEY}
