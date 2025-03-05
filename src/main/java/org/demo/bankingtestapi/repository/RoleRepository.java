@@ -1,12 +1,11 @@
 package org.demo.bankingtestapi.repository;
-
-import org.demo.bankingtestapi.entity.User;
+import org.demo.bankingtestapi.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, String> {
-    Optional<User> findByUsername(String username);
+public interface RoleRepository extends JpaRepository<Role, Long> {
+    Optional<Role> findByName(String roleName);
 }

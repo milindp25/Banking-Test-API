@@ -2,8 +2,10 @@ package org.demo.bankingtestapi.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Set;
 
 @Entity
 @Table(name = "USERS")
@@ -39,11 +41,12 @@ public class User {
     @Temporal(TemporalType.DATE)
     private Date dateOfBirth;
 
-    @Column(name = "role_id", nullable = false)
-    private Integer roleId;
-
     @Column(name = "zip_code", nullable = false)
     private Long zipCode;
+
+    @ManyToOne
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

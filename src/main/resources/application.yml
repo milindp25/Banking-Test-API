@@ -26,5 +26,38 @@ springdoc:
       client-secret: client-secret
       token-url: http://localhost:9000/oauth2/token
 
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  security:
+    enabled: false  # <--- This forces Spring to remove any actuator security
+  endpoint:
+    health:
+      show-details: always
+
+
 jwt:
-  secret=${JWT_SECRET_KEY}
+  secret: ${JWT_SECRET_KEY}
+
+security:
+  roles:
+    public:
+      - "/api/auth/**"
+      - "/swagger-ui/**"
+      - "/v3/api-docs/**"
+    user:
+      - "/api/user/**"
+    admin:
+      - "/**"  # Admin has access to everything
+    agent:
+      - "/**"  # Agent has access to everything
+
+
