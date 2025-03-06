@@ -1,16 +1,15 @@
 package org.demo.bankingtestapi.controller;
 
+import jakarta.validation.Valid;
+import org.demo.bankingtestapi.DTO.RegisterUserDto;
 import org.demo.bankingtestapi.config.JwtUtil;
 import org.demo.bankingtestapi.entity.User;
+import org.demo.bankingtestapi.service.AuditService;
 import org.demo.bankingtestapi.service.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Date;
+import java.sql.Date;
 import java.util.Map;
-import java.util.Set;
-
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,39 +17,49 @@ public class AuthController {
 
     private final JwtUtil jwtUtil;
     private final UserService userService;
+    private final AuditService auditService;
 
-    public AuthController(JwtUtil jwtUtil, UserService userService) {
+    public AuthController(JwtUtil jwtUtil, UserService userService, AuditService auditService) {
         this.jwtUtil = jwtUtil;
         this.userService = userService;
+        this.auditService = auditService;
     }
 
     @PostMapping("/token")
     public Map<String, String> generateToken(@RequestParam String clientId) {
-        // Assign default role as "USER" (modify as needed)
-       String roles = "ADMIN";
-
-        // Generate a JWT token with roles
+        // For demonstration, using a fixed role. Adjust as needed.
+        String roles = "ADMIN";
         String token = jwtUtil.generateToken(clientId, roles);
         return Map.of("access_token", token);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestHeader(name = "X-Client-ID", required = false) String clientId,@RequestBody Map<String, Object> request) {
-        if (clientId == null || clientId.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Client ID is required"));
-        }
-        String username = (String) request.get("username");
-        String email = (String) request.get("email");
-        String password = (String) request.get("password");
-        String phoneNumber = (String) request.get("phoneNumber");
-        String nationalId = (String) request.get("nationalId");
-        String address = (String) request.get("address");
-        Date dateOfBirth = new Date((long) request.get("dateOfBirth"));
-        Long zipCode = Long.valueOf((Integer) request.get("zipCode"));
-        String roleName = request.getOrDefault("role", "USER").toString(); // Default to USER
+    public ResponseEntity<?> registerUser(
+            @RequestHeader(name = "X-Client-ID", required = false) String clientId,
+            @Valid @RequestBody RegisterUserDto registerUserDto) {
 
-        User user = userService.registerUser(username, email, password, phoneNumber, nationalId, address, dateOfBirth, zipCode, roleName);
+        if (clientId == null || clientId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Client ID is required.");
+        }
+
+        // Convert LocalDate to java.sql.Date
+        Date dob = Date.valueOf(registerUserDto.getDateOfBirth());
+
+        User user = userService.registerUser(
+                registerUserDto.getUsername(),
+                registerUserDto.getEmail(),
+                registerUserDto.getPassword(),
+                registerUserDto.getPhoneNumber(),
+                registerUserDto.getNationalId(),
+                registerUserDto.getAddress(),
+                dob,
+                registerUserDto.getZipCode(),
+                registerUserDto.getRoleId()
+        );
+
+        // Log registration event in the audit table
+        auditService.logAction(user, "User registration successful for email: " + user.getEmail());
+
         return ResponseEntity.ok(Map.of("message", "User registered successfully", "userId", user.getId()));
     }
 
@@ -62,18 +71,22 @@ public class AuthController {
         return userService.findByUserName(username)
                 .map(user -> {
                     if (user.getPasswordHash() == null) {
-                        return ResponseEntity.status(403).body(Map.of("error", "Password not set. Please reset your password."));
+                        return ResponseEntity.status(403)
+                                .body(Map.of("error", "Password not set. Please reset your password."));
                     }
 
                     if (!userService.validatePassword(password, user.getPasswordHash())) {
+                        // Log failed login attempt
+                        auditService.logAction(user, "Failed login attempt due to invalid credentials.");
                         return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
                     }
 
                     String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
+                    // Log successful login event
+                    auditService.logAction(user, "User login successful.");
                     return ResponseEntity.ok(Map.of("access_token", token, "token_type", "Bearer"));
                 })
                 .orElse(ResponseEntity.status(404).body(Map.of("error", "User not found")));
-
     }
 
     @PostMapping("/reset-password")
@@ -90,6 +103,11 @@ public class AuthController {
             return ResponseEntity.status(404).body(Map.of("error", "User not found"));
         }
 
+        // Optionally log the password reset action if the user is found
+        userService.findByUserName(email).ifPresent(user ->
+                auditService.logAction(user, "Password reset successfully for user: " + email)
+        );
+
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 
@@ -97,5 +115,3 @@ public class AuthController {
         return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$");
     }
 }
-
-

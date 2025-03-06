@@ -55,6 +55,7 @@ security:
       - "/v3/api-docs/**"
     user:
       - "/api/user/**"
+      - "/api/deposits"
     admin:
       - "/**"  # Admin has access to everything
     agent:

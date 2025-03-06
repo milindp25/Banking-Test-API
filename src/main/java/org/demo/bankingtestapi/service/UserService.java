@@ -2,6 +2,7 @@ package org.demo.bankingtestapi.service;
 
 import org.demo.bankingtestapi.entity.Role;
 import org.demo.bankingtestapi.entity.User;
+import org.demo.bankingtestapi.exception.BadRequestException;
 import org.demo.bankingtestapi.repository.RoleRepository;
 import org.demo.bankingtestapi.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -36,10 +37,10 @@ public class UserService {
 
     public User registerUser(String username, String email, String password, String phoneNumber, String nationalId, String address, Date dateOfBirth, Long zipCode,String roleName) {
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("User with this email already exists");
+            throw new BadRequestException("User with this email already exists");
         }
-        Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new RuntimeException("Invalid role"));
+        Role role = roleRepository.findById(Long.valueOf(roleName))
+                .orElseThrow(() -> new BadRequestException("Invalid role"));
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
