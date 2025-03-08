@@ -56,36 +56,27 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.AWS_EC2_SSH_KEY }}
 
-      - name: Debug SSH
-        run: |
-          echo "Checking SSH configuration..."
-          ls -la ~/.ssh || echo "SSH directory not found"
-          echo "Testing SSH connection..."
-          ssh -vvv ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} 'echo SSH connection successful'
-
-      - name: Add EC2 to known hosts
+      - name: Disable host key checking
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.AWS_EC2_HOST }} >> ~/.ssh/known_hosts
-          cat ~/.ssh/known_hosts
+          echo "Host *" > ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  UserKnownHostsFile=/dev/null" >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
 
       - name: Transfer JAR file to EC2
         run: |
-          echo "Attempting to transfer file..."
-          scp -v *.jar ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}:~/app.jar
+          scp -o StrictHostKeyChecking=no *.jar ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }}:~/app.jar
 
       - name: Deploy to EC2
         run: |
-          echo "Connecting to EC2 instance..."
-          ssh ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} '
-            echo "Connected successfully"
-            echo "Checking for running application..."
+          ssh -o StrictHostKeyChecking=no ${{ secrets.AWS_EC2_USER }}@${{ secrets.AWS_EC2_HOST }} '
+            # Stop existing application if running
             if pgrep -f "java -jar.*app.jar"; then
-              echo "Stopping existing application..."
               sudo pkill -f "java -jar.*app.jar"
             fi
           
-            echo "Starting application with environment variables..."
+            # Start application with environment variables
             nohup java -jar \
               -DDB_URL=${{ secrets.DB_URL }} \
               -DDB_USERNAME=${{ secrets.DB_USERNAME }} \
@@ -93,7 +84,7 @@ jobs:
               -DJWT_SECRET=${{ secrets.JWT_SECRET }} \
               ~/app.jar > ~/app.log 2>&1 &
           
-            echo "Waiting to ensure app starts properly..."
+            # Wait to ensure app starts properly
             sleep 10
             if pgrep -f "java -jar.*app.jar"; then
               echo "Application deployed successfully"
