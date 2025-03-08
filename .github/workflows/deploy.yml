@@ -51,8 +51,8 @@ jobs:
             echo "Deleting old JAR files..."
             rm -f /home/ec2-user/app/*.jar
 
-            echo "Copying latest JAR from build/libs..."
-            cp /home/ec2-user/app/build/libs/Banking-Test-API-0.0.1-SNAPSHOT.jar /home/ec2-user/app/
+            echo "Moving latest JAR from build/libs to app directory..."
+            mv /home/ec2-user/app/build/libs/Banking-Test-API-0.0.1-SNAPSHOT.jar /home/ec2-user/app/
 
             echo "Setting execute permissions for the JAR..."
             chmod +x /home/ec2-user/app/Banking-Test-API-0.0.1-SNAPSHOT.jar
