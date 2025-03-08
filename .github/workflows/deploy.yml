@@ -41,19 +41,24 @@ jobs:
           username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
           script: |
+            echo "Navigating to app directory..."
             cd /home/ec2-user/app
+
             echo "Stopping old application (if running)..."
             sudo pkill -f 'java -jar' || true
             sleep 5
 
             echo "Deleting old JAR files..."
-            rm -f *.jar
+            rm -f /home/ec2-user/app/*.jar
 
-            echo "Moving latest JAR from build/libs to app directory..."
-            mv build/libs/Banking-Test-API-0.0.1-SNAPSHOT.jar /home/ec2-user/app/
+            echo "Copying latest JAR from build/libs..."
+            cp /home/ec2-user/app/build/libs/Banking-Test-API-0.0.1-SNAPSHOT.jar /home/ec2-user/app/
+
+            echo "Setting execute permissions for the JAR..."
+            chmod +x /home/ec2-user/app/Banking-Test-API-0.0.1-SNAPSHOT.jar
 
             echo "Starting new application..."
-            nohup java -jar /home/ec2-user/app/Banking-Test-API-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+            nohup java -jar /home/ec2-user/app/Banking-Test-API-0.0.1-SNAPSHOT.jar > /home/ec2-user/app/app.log 2>&1 &
 
             echo "Deployment successful!"
       
