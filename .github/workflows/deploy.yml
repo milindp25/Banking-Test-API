@@ -42,5 +42,15 @@ jobs:
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/app
+
+            echo "Stopping old application (if running)..."
             sudo pkill -f 'java -jar' || true
+            sleep 5
+
+            echo "Deleting old JAR files..."
+            rm -f *.jar
+
+            echo "Starting new application..."
             nohup java -jar build/libs/*.jar > app.log 2>&1 &
+
+            echo "Deployment successful!"
