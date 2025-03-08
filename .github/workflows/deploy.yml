@@ -31,8 +31,8 @@ jobs:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USER }}
           key: ${{ secrets.AWS_EC2_SSH_KEY }}
-          source: "build/libs/Banking-Test-API-0.0.1-SNAPSHOT.jar"
-          target: "/home/ec2-user/app/"
+          source: "build/libs/*.jar"
+          target: "/home/ec2-user/app"
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v0.1.8
@@ -58,7 +58,7 @@ jobs:
             chmod +x /home/ec2-user/app/Banking-Test-API-0.0.1-SNAPSHOT.jar
 
             echo "Starting new application..."
-            nohup java -jar /home/ec2-user/app/Banking-Test-API-0.0.1-SNAPSHOT.jar > /home/ec2-user/app/app.log 2>&1 &
+            nohup java -jar /home/ec2-user/app/build/libs/Banking-Test-API-0.0.1-SNAPSHOT.jar > /home/ec2-user/app/app.log 2>&1 &
 
             echo "Deployment successful!"
       
